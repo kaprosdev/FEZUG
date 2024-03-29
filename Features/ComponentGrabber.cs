@@ -1,4 +1,5 @@
-﻿using FezEngine.Tools;
+﻿using Common;
+using FezEngine.Tools;
 using FEZUG.Features.Console;
 using Microsoft.Xna.Framework;
 using System;
@@ -42,12 +43,17 @@ namespace FEZUG.Features
 			return null;
 		}
 
-		public IEnumerable<MemberInfo> GetFieldsOf(IGameComponent component)
+		public IEnumerable<FieldInfo> GetFieldsOf(IGameComponent component)
 		{
 			var fields = component.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 			var fields_filtered = from field in fields where field.GetCustomAttribute<CompilerGeneratedAttribute>() == null select field;
+			return from field in fields_filtered orderby field.Name select field;
+		}
+
+		public IEnumerable<PropertyInfo> GetPropsOf(IGameComponent component)
+		{
 			var props = component.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-			return from field in fields_filtered.Concat<MemberInfo>(props) orderby field.Name select field;
+			return from prop in props orderby prop.Name select prop;
 		}
 
 		public bool Execute(string[] args)
@@ -77,8 +83,11 @@ namespace FEZUG.Features
 
 			if (path.Length < 2)
 			{
-				FezugConsole.Print("List of accessible members on " + args[0] + ":");
+				FezugConsole.Print("Fields on " + component_type.Name + ":", Color.LightSlateGray);
 				FezugConsole.Print(String.Join(", ", from field in GetFieldsOf(component) select field.Name));
+				FezugConsole.Print("Props on " + component_type.Name + ":", Color.LightSlateGray);
+				FezugConsole.Print(String.Join(", ", from field in GetPropsOf(component) select field.Name));
+				return true;
 			}
 
 			var currentPath = component_type.Name;
@@ -98,14 +107,14 @@ namespace FEZUG.Features
 					else
 					{
 						pov = prop.GetValue(pov);
+						currentPath = currentPath + "." + prop.Name;
 					}
-
 				}
 				else
 				{
 					pov = field.GetValue(pov);
+					currentPath = currentPath + "." + field.Name;
 				}
-				currentPath = currentPath + "." + field.Name;
 			}
 
 			FezugConsole.Print(currentPath + " = " + pov);
