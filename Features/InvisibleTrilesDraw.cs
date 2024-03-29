@@ -1,12 +1,9 @@
-﻿using Common;
-using FezEngine;
-using FezEngine.Components;
+﻿using FezEngine;
 using FezEngine.Effects;
 using FezEngine.Services;
 using FezEngine.Structure;
 using FezEngine.Structure.Geometry;
 using FezEngine.Tools;
-using FezGame;
 using FezGame.Services;
 using FEZUG.Features.Console;
 using FEZUG.Helpers;
@@ -15,16 +12,12 @@ using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace FEZUG.Features
 {
-
-
-	internal class InvisibleTrilesDraw : IFezugFeature
+    internal class InvisibleTrilesDraw : IFezugFeature
     {
         private enum InvisibleType
         {
