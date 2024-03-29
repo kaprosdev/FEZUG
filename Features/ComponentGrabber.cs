@@ -28,6 +28,42 @@ namespace FEZUG.Features
 
 		public List<string> Autocomplete(string[] args)
 		{
+			if (args.Length != 1) return null;
+
+			var path = args[0].Split('.');
+			if(path.Length == 1)
+			{
+				return ComponentList.Where(s => s.ToLower().StartsWith(args[0])).ToList();
+			}
+
+			Object pov = ServiceHelper.Game.Components.FirstOrDefault(c => c.GetType().Name.ToLower().Equals(path[0]));
+			for (int i = 1; i < path.Length - 1; i++)
+			{
+				if(pov == null)
+				{
+					return null;
+				}
+
+				var field = pov.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).FirstOrDefault(f => f.Name.ToLower().Equals(path[i]));
+				if (field == null)
+				{
+					var prop = pov.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).FirstOrDefault(p => p.Name.ToLower().Equals(path[i]));
+					if (prop == null)
+					{
+						return null;
+					}
+					else
+					{
+						pov = prop.GetValue(pov);
+					}
+				}
+				else
+				{
+					pov = field.GetValue(pov);
+				}
+			}
+
+			return (from member in GetBothFieldsAndPropsOf(pov) where member.Name.ToLower().StartsWith(path[path.Length - 1]) select (String.Join(".", path.Take(path.Length - 1)) + '.' + member.Name)).ToList();
 			// if (args.Length == 1)
 			// {
 			// 	return ComponentList.Where(s => s.ToLower().StartsWith(args[0])).ToList();
@@ -43,17 +79,22 @@ namespace FEZUG.Features
 			return null;
 		}
 
-		public IEnumerable<FieldInfo> GetFieldsOf(IGameComponent component)
+		public IEnumerable<FieldInfo> GetFieldsOf(Object component)
 		{
 			var fields = component.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 			var fields_filtered = from field in fields where field.GetCustomAttribute<CompilerGeneratedAttribute>() == null select field;
 			return from field in fields_filtered orderby field.Name select field;
 		}
 
-		public IEnumerable<PropertyInfo> GetPropsOf(IGameComponent component)
+		public IEnumerable<PropertyInfo> GetPropsOf(Object component)
 		{
 			var props = component.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 			return from prop in props orderby prop.Name select prop;
+		}
+
+		public IEnumerable<MemberInfo> GetBothFieldsAndPropsOf(Object component)
+		{
+			return from member in GetFieldsOf(component).Concat<MemberInfo>(GetPropsOf(component)) orderby member.Name select member;
 		}
 
 		public bool Execute(string[] args)
